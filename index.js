@@ -1,74 +1,80 @@
-// Create a counter for unique IDs
-let expenseIdCounter = 1;
-
 function handleFormSubmit(event) {
   event.preventDefault();
 
-  const amount = event.target.expense_amount.value;
-  const description = event.target.desc.value;
-  const category = event.target.cate_gory.value;
+  console.log("Form submitted!");
 
-  const expenseEntry = {
-    id: expenseIdCounter++,
-    amount: amount,
-    description: description,
-    category: category,
+  const expenseData = {
+    expense: event.target.expense.value,
+    description: event.target.description.value,
+    category: event.target.category.value,
   };
 
-  // Create a new element to display the recorded user entry
-  const entryElement = document.createElement("div");
-  entryElement.setAttribute("data-id", expenseEntry.id);
-  entryElement.innerHTML = `<span>Amount: ${amount}</span>
-                            <span>Description: ${description}</span>
-                            <span>Category: ${category}</span>
-                            <button class="edit-btn" onclick="editExpense(${expenseEntry.id})">Edit</button>
-                            <button class="delete-btn" onclick="deleteExpense(${expenseEntry.id})">Delete</button>`;
+  // using API to store our data into server
+  axios
+    .post(`${apiUrl}/ExpenseTracker`, expenseData)
+    .then((res) => displayData(res.data))
+    .catch((err) => console.log(err));
 
-  // Append the new element to the "expenseListContainer" div
-  document.getElementById("expenseListContainer").appendChild(entryElement);
-
-  // Clear the form after submission
-  event.target.reset();
+  // making input field empty after submission
+  document.getElementById("expense").value = "";
+  document.getElementById("description").value = "";
+  document.getElementById("category").value = "";
 }
+let apiUrl = "https://crudcrud.com/api/344fe9107860481ea63b85ab3cd9aec6";
 
-function editExpense(expenseId) {
-  const entryElement = document.querySelector(`[data-id="${expenseId}"]`);
-  if (entryElement) {
-    // Get the existing values
-    const existingAmount = entryElement
-      .querySelector("span:nth-child(1)")
-      .textContent.split(": ")[1];
-    const existingDescription = entryElement
-      .querySelector("span:nth-child(2)")
-      .textContent.split(": ")[1];
-    const existingCategory = entryElement
-      .querySelector("span:nth-child(3)")
-      .textContent.split(": ")[1];
+function displayData(expenseData) {
+  const newLi = document.createElement("li"); // main li tag
 
-    // Prompt the user for updated values
-    const newAmount = prompt("Enter new amount:", existingAmount);
-    const newDescription = prompt(
-      "Enter new description:",
-      existingDescription
-    );
-    const newCategory = prompt("Enter new category:", existingCategory);
+  const newLiText = document.createTextNode(
+    `${expenseData.expense} - ${expenseData.description} - ${expenseData.category}  `
+  ); // adding it to node
+  newLi.appendChild(newLiText); // adding expesnse data to main li.
 
-    // Update the entryElement with the new values
-    entryElement.querySelector(
-      "span:nth-child(1)"
-    ).textContent = `Amount: ${newAmount}`;
-    entryElement.querySelector(
-      "span:nth-child(2)"
-    ).textContent = `Description: ${newDescription}`;
-    entryElement.querySelector(
-      "span:nth-child(3)"
-    ).textContent = `Category: ${newCategory}`;
-  }
+  // adding delete button
+  const deleteBtn = document.createElement("button");
+  deleteBtn.innerText = "Delete";
+  newLi.appendChild(deleteBtn);
+
+  // ADDING EDIT BUTTON
+  const editBtn = document.createElement("button");
+  editBtn.innerText = "Edit";
+  newLi.appendChild(editBtn);
+
+  const expenseList = document.querySelector("ul"); // slecting ul tag
+  expenseList.appendChild(newLi); // finally adding newLi tag to ul
+  //delete button functionality
+  deleteBtn.addEventListener("click", function (event) {
+    axios
+      .delete(`${apiUrl}/ExpenseTracker/${expenseData._id}`)
+      .then((res) => console.log(res))
+      .catch((err) => console.log(err));
+    console.log(expenseData._id);
+
+    expenseList.removeChild(event.target.parentElement);
+  });
+
+  //edit button functionality
+  editBtn.addEventListener("click", function (event) {
+    expenseList.removeChild(event.target.parentElement); // deleting that line from screen
+    axios
+      .delete(`${apiUrl}/ExpenseTracker/${expenseData._id}`)
+      .then((res) => console.log(res))
+      .catch((err) => console.log(err));
+
+    document.getElementById("expense").value = expenseData.expense;
+    document.getElementById("description").value = expenseData.description;
+    document.getElementById("category").value = expenseData.category;
+  });
 }
+// here I added window for reaload screen, so as screen is reloaded or open data will fetch from api and showed on screen
+window.addEventListener("DOMContentLoaded", () => {
+  axios
+    .get(`${apiUrl}/ExpenseTracker`)
+    .then((res) => {
+      for (let i = 0; i < res.data.length; i++) {
+        displayData(res.data[i]);
+      }
+    })
 
-function deleteExpense(expenseId) {
-  const entryElement = document.querySelector(`[data-id="${expenseId}"]`);
-  if (entryElement) {
-    document.getElementById("expenseListContainer").removeChild(entryElement);
-  }
-}
+    .catch((err) => console.log(err));
+});
